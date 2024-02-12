@@ -34,3 +34,19 @@ The user should have obtained a roughly correct geometry with reasonable UV maps
 The user needs to first manually align the object with the reference image (`ref_image_path`) to obtain `model_matrix` given a known `view_matrix`. Note that the only thing we care about is `model_view_matrix` instead of individual ones, and thus you can fix `view_matrix` and tune `model_matrix`. If a foreground mask of the object in the reference image (`ref_mask_path`) is provided, we will first refine the `model_matrix` by matching the silhouette via differentiable rendering. Next, we will optimize the texture by matching the rendered RGB image and renference image via differentiable rendering.
 
 We use `simple-parsing` to define program arguments by `dataclass`, and also support reading from a config file (json or yaml) via `--config_path={CONFIG_FILE}`.
+
+### Complete the texture from a partially baked mesh
+
+The previous step can only generate a partially baked mesh. We will use [Zero123++](https://github.com/SUDO-AI-3D/zero123plus) to hallucinate multi-view images. First, you need to install extra dependencies: `pip install -r requirements-extra.txt`.
+
+```bash
+python complete_object_texture.py -h
+#  --mesh_path str       path to the object mesh (partially baked) (default: assets/objects/opened_pepsi_can/textured.baked.glb)
+#  --delta_R ndarray     extra rotation to rotate the object to a canonical pose, [3, 3]. Require manually tuning. (default: [[1. 0. 0.] [0. 1. 0.] [0. 0. 1.]])
+#  --model_rotation ndarray
+#                        model matrix to render the object (at the canonical pose) as the image condition for Zero123++, [4, 4] (default: [[ 0.8575973 0.5 0.12052744] [-0.49513403 0.8660254 -0.06958655] [-0.1391731 0. 0.99026807]])
+#  --seed int            random seed for Zero123++. Require manually tuning. (default: 25)
+#  --output_path str     output path for the baked mesh (default: None)
+#  --force_generate bool, --noforce_generate bool
+#                        force to re-generate zero123++ outputs (default: False)
+```

@@ -26,6 +26,8 @@ def up_to_homogeneous(vectors: torch.Tensor):
 
 def to_transformation_matrix(R_3x3: torch.Tensor, t_3x1: torch.Tensor):
     """Converts rotation matrix and translation vector to transformation matrix."""
+    if t_3x1 is None:
+        t_3x1 = torch.zeros_like(R_3x3[..., :1])
     return torch.cat(
         [
             torch.nn.functional.pad(R_3x3, (0, 0, 0, 1)),
@@ -33,6 +35,26 @@ def to_transformation_matrix(R_3x3: torch.Tensor, t_3x1: torch.Tensor):
         ],
         dim=1,
     )
+
+
+def look_at(eye, at, up):
+    """Creates a (OpenGL) view matrix that transforms vertices from world space to camera space.
+
+    Reference:
+        - https://www.khronos.org/registry/OpenGL-Refpages/gl2.1/xhtml/gluLookAt.xml
+        - https://learnopengl.com/Getting-started/Camera
+    """
+    eye, at, up = np.array(eye), np.array(at), np.array(up)
+    z = eye - at
+    z = z / np.linalg.norm(z)
+    x = np.cross(up, z)
+    assert np.linalg.norm(x) > 1e-6, "up and at vectors are too close!"
+    x = x / np.linalg.norm(x)
+    y = np.cross(z, x)
+    T = np.eye(4)
+    R = np.stack([x, y, z], axis=0, out=T[:3, :3])
+    T[:3, 3] = -R @ eye
+    return T
 
 
 # ---------------------------------------------------------------------------- #

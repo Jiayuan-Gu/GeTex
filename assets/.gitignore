@@ -1,1 +1,3 @@
 *.baked.glb
+*.baked.albedo.glb
+*.baked.emissive.glb

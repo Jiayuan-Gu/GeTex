@@ -188,6 +188,7 @@ def bake_texture(
 
     # Pack texture into mesh
     tex_pil = Image.fromarray(render_utils.to_uint8(tex_param))
+    tex_pil.save(Path(mesh_path).with_suffix(".baked_texture.png"))
 
     if as_emission:
         mesh.visual.material = PBRMaterial(
