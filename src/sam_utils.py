@@ -1,3 +1,4 @@
+import argparse
 import os
 
 import cv2
@@ -27,7 +28,8 @@ def annotate(image_path, output_path, ckpt_path=DEFAULT_CKPT_PATH):
     image_pil = Image.open(image_path).convert("RGB")
     image = np.array(image_pil)
     cv2.imshow(window_name, image[..., ::-1])
-    cv2.waitKey(1)
+    print("Press any key to continue...")
+    cv2.waitKey(0)
 
     # Initialize SAM
     ckpt_path = os.path.expanduser(ckpt_path)
@@ -66,14 +68,18 @@ def annotate(image_path, output_path, ckpt_path=DEFAULT_CKPT_PATH):
         image = np.array(image_pil)
         point_coords = []
         point_labels = []
+
         # Annotate positive and negative points
         cv2.imshow(window_name, image[..., ::-1])
+        print("Left click to add positive point, right click to add negative point")
+        print("Press any key to stop annotation.")
         cv2.waitKey(0)
 
         print(point_coords, point_labels)
         point_coords = np.array(point_coords)
         point_labels = np.array(point_labels)
         if len(point_coords) == 0:
+            print("No points annotated. Skipping.")
             continue
 
         # Inference
@@ -89,14 +95,35 @@ def annotate(image_path, output_path, ckpt_path=DEFAULT_CKPT_PATH):
             )
         mask = masks[scores.argmax()] > 0  # [H, W]
         cv2.imshow(window_name, np.uint8(mask * 255))
+        print("Press ESC to finish annotation. Otherwise reset annotation.")
         key = cv2.waitKey(0)
         if key == 27:  # escape
             break
-    
+
     masked_image = np.array(image_pil) * np.uint8(mask)[..., None]
-    cv2.imshow(window_name, masked_image)
+    cv2.imshow(window_name, masked_image[..., ::-1])
     key = cv2.waitKey(0)
     cv2.destroyAllWindows()
 
     if output_path is not None:
         Image.fromarray(mask).save(output_path)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-i",
+        "--image_path",
+        type=str,
+        required=True,
+        help="input image path to annotate",
+    )
+    parser.add_argument(
+        "-o", "--output_path", type=str, help="output path to save annotated mask"
+    )
+    args = parser.parse_args()
+    annotate(args.image_path, args.output_path)
+
+
+if __name__ == "__main__":
+    main()

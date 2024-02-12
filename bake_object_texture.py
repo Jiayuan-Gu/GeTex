@@ -1,4 +1,5 @@
 import os
+from dataclasses import dataclass
 from pathlib import Path
 
 import calibur
@@ -34,11 +35,11 @@ def bake_texture(
     as_emission=False,
     ref_mask_path: str = None,
 ):
-    """Bake the texture of an object. 
-    
+    """Bake the texture of an object from a single image.
+
     This function optimizes the texture of the object mesh by minimizing the rendering loss with respect to the reference image.
     If the reference mask is provided, we will first optimize the model matrix to get a better alignment, and then optimize the texture.
-    
+
     Args:
         mesh_path (str):
             the path to the object mesh
@@ -204,50 +205,74 @@ def bake_texture(
         suffix = "baked"
         output_path = _mesh_path.with_stem(_mesh_path.stem + "." + suffix)
         output_path = output_path.with_suffix(".glb")
-    
+
     # Export mesh
     Path(output_path).parent.mkdir(exist_ok=True, parents=True)
     print("Exporting", output_path)
     mesh.export(output_path)
 
 
-def main():
-    preset = dict(
-        mesh_path="assets/objects/opened_pepsi_can/textured.dae",
-        ref_image_path="assets/ref_images/move_near_real_1_2.sd-x4-43.png",
-        model_matrix=np.array(
-            [
-                [9.9999994e-01, -5.6162389e-06, 4.1270844e-04, -3.8991699e-01],
-                [4.1270826e-04, -2.5391579e-05, -9.9999988e-01, 2.0712100e-01],
-                [5.6267454e-06, 1.0000000e00, -2.5391579e-05, 9.5182002e-01],
-                [0.0000000e00, 0.0000000e00, 0.0000000e00, 1.0000000e00],
-            ]
-        ),
-        view_matrix=np.array(
-            [
-                [0.093, 0.996, -0.0, -0.242],
-                [-0.704, 0.066, 0.707, -0.785],
-                [0.704, -0.066, 0.707, -1.043],
-                [0.0, 0.0, 0.0, 1.0],
-            ]
-        ),
-        fov_x=1.2363,
-        mask_path="assets/ref_masks/mask_pepsi_can.png",
-    )
+@dataclass
+class Config:
+    mesh_path: str  # path to the object mesh
+    ref_image_path: str  # path to the reference image
+    model_matrix: np.ndarray  # model matrix, [4, 4]
+    view_matrix: np.ndarray  # view matrix, [4, 4]
+    fov_x: np.ndarray  # field of view in radians
+    ref_mask_path: str  # path to the reference mask. If specified but not found, an interactive annotation will be performed.
+    output_path: str = None  # output path for the baked mesh
 
-    ref_image_path = preset["ref_image_path"]
-    ref_mask_path = preset.get("mask_path")
+    def __post_init__(self):
+        if self.ref_mask_path == "":
+            self.ref_mask_path = None
+        if self.output_path == "":
+            self.output_path = None
+
+
+PRESET = Config(
+    mesh_path="assets/objects/opened_pepsi_can/textured.dae",
+    ref_image_path="assets/ref_images/move_near_real_1_2.sd-x4-43.png",
+    model_matrix=np.array(
+        [
+            [9.9999994e-01, -5.6162389e-06, 4.1270844e-04, -3.8991699e-01],
+            [4.1270826e-04, -2.5391579e-05, -9.9999988e-01, 2.0712100e-01],
+            [5.6267454e-06, 1.0000000e00, -2.5391579e-05, 9.5182002e-01],
+            [0.0000000e00, 0.0000000e00, 0.0000000e00, 1.0000000e00],
+        ]
+    ),
+    view_matrix=np.array(
+        [
+            [0.093, 0.996, -0.0, -0.242],
+            [-0.704, 0.066, 0.707, -0.785],
+            [0.704, -0.066, 0.707, -1.043],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    ),
+    fov_x=1.2363,
+    ref_mask_path="assets/ref_masks/mask_pepsi_can.png",
+)
+
+
+def main():
+    # simple-parsing supports config files
+    import simple_parsing
+
+    config = simple_parsing.parse(Config, default=PRESET, add_config_path_arg=True)
+    print(config)
+
+    ref_mask_path = config.ref_mask_path
     if ref_mask_path is not None and not os.path.exists(ref_mask_path):
-        from src.sam_utils import annotate
-        annotate(image_path=ref_image_path, output_path=ref_mask_path)
+        from src.sam_utils import annotate  # fmt: skip
+        annotate(image_path=config.ref_image_path, output_path=ref_mask_path)
 
     bake_texture(
-        preset["mesh_path"],
-        preset["ref_image_path"],
-        preset["model_matrix"],
-        preset["view_matrix"],
-        preset["fov_x"],
+        config.mesh_path,
+        config.ref_image_path,
+        config.model_matrix,
+        config.view_matrix,
+        config.fov_x,
         ref_mask_path=ref_mask_path,
+        output_path=config.output_path,
     )
 
 

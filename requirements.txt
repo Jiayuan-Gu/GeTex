@@ -7,6 +7,7 @@ ninja
 # common
 tqdm
 calibur
+simple-parsing
 # mesh
 trimesh>=4.1.3
 pycollada
