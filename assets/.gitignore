@@ -3,3 +3,5 @@
 *.baked.emissive.glb
 *.baked_texture.png
 *.baked.completed_texture.png
+*.zero123plus.png
+*.zero123plus_mask.png

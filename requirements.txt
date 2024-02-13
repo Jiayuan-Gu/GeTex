@@ -16,7 +16,5 @@ pyglet<2
 pillow
 matplotlib
 opencv-python
-imageio
-imageio[ffmpeg]
 # dev
 ipykernel

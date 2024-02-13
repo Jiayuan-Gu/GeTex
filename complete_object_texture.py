@@ -79,7 +79,7 @@ def complete_texture(
 
     # Define a camera to render an image from the similar view when baking the texture
     view_matrix0 = render_utils.look_at(
-        eye=[1.5, 0.0, 0.0],
+        eye=[0.0, 0.0, 1.5],
         at=[0.0, 0.0, 0.0],
         up=[0.0, 1.0, 0.0],
     )
@@ -207,9 +207,9 @@ def complete_texture(
     elevations = [30, -20, 30, -20, 30, -20]
     view_matrices = []
     for azim, elev in zip(azimuths, elevations):
-        R = Rotation.from_euler("YZ", [azim, elev], degrees=True).as_matrix()
+        R = Rotation.from_euler("YX", [azim, -elev], degrees=True).as_matrix()
         view_matrix = render_utils.look_at(
-            eye=np.array([1.5, 0.0, 0.0]) @ R.T,
+            eye=np.array([0, 0.0, 1.5]) @ R.T,
             at=np.array([0.0, 0.0, 0.0]),
             up=np.array([0.0, 1.0, 0.0]),
         )
@@ -348,8 +348,8 @@ class Config:
 
 PRESET = Config(
     mesh_path="assets/objects/opened_pepsi_can/textured.baked.glb",
-    delta_R=Rotation.from_euler("y", 0, degrees=True).as_matrix(),
-    model_rotation=Rotation.from_euler("yz", [8, -30], degrees=True).as_matrix(),
+    delta_R=Rotation.from_euler("y", -90 + 8, degrees=True).as_matrix(),
+    model_rotation=Rotation.from_euler("x", 30, degrees=True).as_matrix(),
     seed=25,
 )
 

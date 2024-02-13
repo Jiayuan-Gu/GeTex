@@ -212,6 +212,9 @@ def bake_texture(
     # Visualize optimized rendered image
     plt.imshow(render_utils.to_uint8(rendered_image[0]))
     plt.show()
+    # Image.fromarray(render_utils.to_uint8(rendered_image[0])).save(
+    #     Path(mesh_path).with_suffix(".optimized_image.png")
+    # )
 
     # Pack texture into mesh
     tex_pil = Image.fromarray(render_utils.to_uint8(tex_param))

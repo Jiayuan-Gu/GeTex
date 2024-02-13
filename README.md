@@ -35,6 +35,15 @@ The user needs to first manually align the object with the reference image (`ref
 
 We use `simple-parsing` to define program arguments by `dataclass`, and also support reading from a config file (json or yaml) via `--config_path={CONFIG_FILE}`.
 
+<p align="center">
+    <img src="assets/ref_images/move_near_real_1_2.sd-x4-43.png" width="24%" alt="reference image" />
+    <img src="assets/ref_masks/mask_pepsi_can.png" width="24%" alt="foreground mask of pepsi can" />
+    <img src="static/img/textured.optimized_image.png" width="24%" alt="optimized rendering result" />
+    <img src="static/img/partially_baked.gif" width="24%" alt="animation for partially baked mesh" />
+</p>
+
+> From left to right: reference image, foreground mask, rendered image of optimized texture, animation for partially baked mesh.
+
 ### Complete the texture from a partially baked mesh
 
 The previous step can only generate a partially baked mesh. We will use [Zero123++](https://github.com/SUDO-AI-3D/zero123plus) to hallucinate multi-view images. First, you need to install extra dependencies: `pip install -r requirements-extra.txt`.
@@ -50,3 +59,12 @@ python complete_object_texture.py -h
 #  --force_generate bool, --noforce_generate bool
 #                        force to re-generate zero123++ outputs (default: False)
 ```
+
+<p align="center">
+  <img src="static/img/textured.baked_texture.png" width="24%" alt="partially baked texture" />
+  <img src="static/img/textured.baked.zero123plus.png" width="16%" alt="zero123++ output" />
+  <img src="static/img/textured.baked.completed_texture.png" width="24%" alt="completed texture" />
+  <img src="static/img/completed_texture.gif" width="24%" alt="animation of completed mesh" />
+</p>
+
+> From left to right: partially baked texture, zero123++ output, completed texture, animation for completed mesh.
