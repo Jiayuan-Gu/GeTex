@@ -9,6 +9,7 @@ import torch
 import trimesh
 from PIL import Image
 from tqdm import tqdm
+from trimesh.visual import TextureVisuals
 from trimesh.visual.material import PBRMaterial
 
 from src import render_utils
@@ -31,9 +32,11 @@ def bake_texture(
     output_path: str = None,
     tex_height=256,
     tex_width=256,
+    max_mip_level=4,
     n_iters=100,
     as_emission=False,
     ref_mask_path: str = None,
+    remap_uvs_by_xatlas: bool = False,
 ):
     """Bake the texture of an object from a single image.
 
@@ -57,16 +60,39 @@ def bake_texture(
             the height of the texture
         tex_width (int):
             the width of the texture
+        max_mip_level (int):
+            the maximum mip level. Since there is only one image, it is better not to set it too high.
         n_iters (int):
             the number of iterations for optimization.
         as_emission (bool):
             whether to convert the texture to emission
         ref_mask_path (str):
             the path to the reference mask
+        remap_uvs_by_xatlas (bool):
+            whether to regenerate uvs by xatlas
     """
     # NOTE: trimesh may not correctly handle multiple materials.
+    mesh = trimesh.load(mesh_path)
+    if isinstance(mesh, trimesh.Scene) and len(mesh.geometry) > 1:
+        print(
+            "\033[93m"
+            + "Multiple geometries found. `trimesh` may not handle multiple materials correctly. The known issue is that the uvs can be different each time. Use `--remap_uvs_by_xatlas=True` to make it deterministic."
+            + "\033[0m"
+        )
+    del mesh
+
     # Load mesh
     mesh = trimesh.load(mesh_path, force="mesh")
+
+    if remap_uvs_by_xatlas:
+        import xatlas  # fmt: skip
+        vmapping, indices, uvs = xatlas.parametrize(mesh.vertices, mesh.faces)
+        mesh = trimesh.Trimesh(
+            vertices=mesh.vertices[vmapping],
+            faces=indices,
+            visual=TextureVisuals(uv=uvs),
+        )
+
     vertices = torch.from_numpy(mesh.vertices).float().cuda()
     faces = torch.from_numpy(mesh.faces).int().cuda()
     uvs = torch.from_numpy(mesh.visual.uv).float().cuda()
@@ -141,7 +167,7 @@ def bake_texture(
         with torch.no_grad():
             dT = render_utils.to_transformation_matrix(dR, dt)
             _model_matrix = _model_matrix @ dT
-            print("Delta pose:", dR, dt)
+            print("Delta pose:", dR.cpu().numpy(), dt.cpu().numpy())
 
         # Visualize optimized silhouette
         with torch.no_grad():
@@ -172,6 +198,7 @@ def bake_texture(
             model_matrix=_model_matrix,
             height=cam_height,
             width=cam_width,
+            max_mip_level=max_mip_level,
         )
         diff = rendered_image - ref_image  # [B, H, W, 3]
         mask = torch.logical_and(ref_mask.squeeze(-1) > 0, rendered_mask)
@@ -222,6 +249,7 @@ class Config:
     fov_x: np.ndarray  # field of view in radians
     ref_mask_path: str  # path to the reference mask. If specified but not found, an interactive annotation will be performed.
     output_path: str = None  # output path for the baked mesh
+    remap_uvs_by_xatlas: bool = False
 
     def __post_init__(self):
         if self.ref_mask_path == "":
@@ -274,6 +302,7 @@ def main():
         config.fov_x,
         ref_mask_path=ref_mask_path,
         output_path=config.output_path,
+        remap_uvs_by_xatlas=config.remap_uvs_by_xatlas,
     )
 
 

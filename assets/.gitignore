@@ -1,3 +1,5 @@
 *.baked.glb
 *.baked.albedo.glb
 *.baked.emissive.glb
+*.baked_texture.png
+*.baked.completed_texture.png

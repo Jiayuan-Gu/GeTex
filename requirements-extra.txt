@@ -2,3 +2,4 @@ git+https://github.com/facebookresearch/segment-anything.git
 diffusers[torch]>=0.25.1
 transformers>=4.37.1
 rembg
+xatlas
